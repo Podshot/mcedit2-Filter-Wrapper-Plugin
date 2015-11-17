@@ -13,12 +13,8 @@ from mcedit2.command import SimplePerformCommand
 
 log = logging.getLogger(__name__)
 
-try:
-    #import pymclevel
-    pass
-except:
-    log.critical("Couldn't load Wrapper API")
-    
+sys.path.remove("c:\\users\\jonathan\\python\\mcedit\\mceditunified")
+print sys.modules.keys()
     
 class FilterCommand(SimplePerformCommand):
     
@@ -103,6 +99,7 @@ class TestTool(EditorTool):
     filters = []
     filterDictionary = {}
     pickedFilter = None
+    needsReload = None
     
     def runFilter(self):
         print "Running filter..."
@@ -127,7 +124,8 @@ class TestTool(EditorTool):
                     if not (hasattr(module, 'displayName')): 
                         module.displayName = module_name
                     self.filterDictionary[module.displayName] = module
-                except:
+                except Exception as e:
+                    print "Exception: " + str(e)
                     pass
                 
     def changeWidget(self, value):
@@ -191,22 +189,42 @@ class TestTool(EditorTool):
             widget.addWidget(filter_widget)
         return widget
     
+    def toolActive(self):
+        if self.needsReload:
+            self.organizeFilters()
+            for i in xrange(0, self.filterPicker.count()):
+                self.filterPicker.removeItem(i)
+            for filt in sorted(self.filterDictionary.keys()):
+                self.filterPicker.addItem(filt)
+    
+    def toolInactive(self):
+        self.needsReload = True
+        
+    def findFilters(self):
+        if not os.path.exists(os.path.join(self.dirpath, "filters")):
+            os.mkdir(os.path.join(self.dirpath, "filters"))
+        for f in glob(os.path.join(self.dirpath, "filters", "*.py")):
+            self.filters.append(f)
     
     def __init__(self, editorSession, *args, **kwargs):
         super(TestTool, self).__init__(editorSession, *args, **kwargs)
-        self.dirpath = dirpath = os.path.dirname(__file__)
+        self.dirpath = os.path.dirname(__file__)
         if ("mceditunified", "pymclevel") in sys.path:
             sys.path.remove("c:\\users\\jonathan\\python\\mcedit\\mceditunified")
-        if os.path.exists(os.path.join(dirpath, 'wrapper-api.zip')):
+        print sys.modules.keys()
+        if os.path.exists(os.path.join(self.dirpath, 'wrapper_api.zip')):
             sys.path.insert(0, 'wrapper_api.zip')
             try:
+                print "Importing here?"
+                log.critical("Importing here?")
                 import pymclevel
+                print "File: " + str(pymclevel.__file__)
+                print "Path: " + str(pymclevel.__path__)
+                sys.modules["pymclevel"] = pymclevel
             except:
                 print "Failed"
-        if not os.path.exists(os.path.join(dirpath, "filters")):
-            os.mkdir(os.path.join(dirpath, "filters"))
-        for f in glob(os.path.join(dirpath, "filters", "*.py")):
-            self.filters.append(f)
+        print sys.modules.keys()
+        self.findFilters()
         self.organizeFilters()
         
         widget = QtGui.QWidget()
@@ -224,6 +242,7 @@ class TestTool(EditorTool):
         layout.addWidget(self.filterButton)
         widget.setLayout(layout)
         self.pickedFilter = self.filterPicker.currentText()
+        self.needsReload = False
         
         
     
