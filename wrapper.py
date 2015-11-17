@@ -10,11 +10,13 @@ import sys
 import imp
 from mcedit2.editortools import EditorTool
 from mcedit2.command import SimplePerformCommand
+from wrapper_api.level import LevelWrapper
+from wrapper_api.options import OptionsWrapper
 
 log = logging.getLogger(__name__)
 
 sys.path.remove("c:\\users\\jonathan\\python\\mcedit\\mceditunified")
-print sys.modules.keys()
+#print sys.modules.keys()
     
 class FilterCommand(SimplePerformCommand):
     
@@ -27,71 +29,6 @@ class FilterCommand(SimplePerformCommand):
         
     def perform(self):
         self.filterModule.perform(self.levelWrapper, self.box, self.options)
-    
-class LevelWrapper:
-    
-    def getChunkSlices(self, box):
-        chunks = []
-        for (cx, cz) in box.chunkPositions():
-            chunk = self.worldEditor.adapter.readChunk(cx, cz, "")
-            chunks.append((chunk, None, None))
-        return chunks
-    
-    def blockAt(self, x, y, z):
-        return self.editorSession.currentDimension.getBlockID(x,y,z)
-    
-    def blockDataAt(self, x, y, z):
-        return self.editorSession.currentDimension.getBlockData(x,y,z)
-    
-    def setBlockAt(self, x, y, z, block_id):
-        self.editorSession.currentDimension.setBlockID(x,y,z,block_id)
-        
-    def setBlockDataAt(self, x, y, z, data):
-        self.editorSession.currentDimension.setBlockData(x,y,z,data)
-        
-    def __init__(self, worldEditor, editorSession):
-        self.worldEditor = worldEditor
-        self.editorSession = editorSession
-        print "WorldEditor Adapter: " + str(dir(self.worldEditor.adapter))
-        #print type(self.worldEditor.adapter.EntityRef)
-        self.displayName = self.worldEditor.displayName
-        #print dir(self.worldEditor.adapter.chunkPositions("Overworld"))
-        #chunks = self.worldEditor.adapter.chunkPositions("Overworld")
-        '''
-        chunk = chunks.next()
-        #    chunk = self.worldEditor.adapter.readChunk(x, z, "Overworld")
-        print dir(chunk)
-        print "===="
-        '''
-    
-class OptionsWrapper:
-    
-    def __init__(self, optionsWidget):
-        self.__options = {}
-        self.optionsWidget = optionsWidget
-        
-    def build(self):
-        #print type(self.optionsWidget)
-        for i in xrange(self.optionsWidget.rowCount()):
-            key = None
-            value = None
-            
-            if self.optionsWidget.itemAt(i, QtGui.QFormLayout.ItemRole.LabelRole) is None:
-                continue
-            
-            key = self.optionsWidget.itemAt(i, QtGui.QFormLayout.ItemRole.LabelRole).widget().text()
-            widget = self.optionsWidget.itemAt(i, QtGui.QFormLayout.ItemRole.FieldRole).widget()
-            if isinstance(widget, QtGui.QLineEdit):
-                value = widget.text()
-            elif isinstance(widget, QtGui.QCheckBox):
-                value = widget.isChecked()
-            else:
-                value = self.optionsWidget.itemAt(i, QtGui.QFormLayout.ItemRole.FieldRole).widget().value()
-            if key != "":
-                self.__options[key] = value
-        
-    def getOptions(self):
-        return self.__options
 
 class TestTool(EditorTool):
     name = "Legacy Filter Wrapper"
@@ -168,7 +105,7 @@ class TestTool(EditorTool):
                     field = QtGui.QLineEdit()
                     #field.textChanged[str].connect(lambda value: self.options.setStringValue(name, value))
                 else:
-                    field = QtGui.QLabel(input[1])
+                    field = QtGui.QLabel(input[0])
                     name = ""
             elif isinstance(input[1], bool):
                 field = QtGui.QCheckBox()
@@ -209,21 +146,21 @@ class TestTool(EditorTool):
     def __init__(self, editorSession, *args, **kwargs):
         super(TestTool, self).__init__(editorSession, *args, **kwargs)
         self.dirpath = os.path.dirname(__file__)
-        if ("mceditunified", "pymclevel") in sys.path:
+        if ("mceditunified") in sys.path:
             sys.path.remove("c:\\users\\jonathan\\python\\mcedit\\mceditunified")
-        print sys.modules.keys()
+        #print sys.modules.keys()
         if os.path.exists(os.path.join(self.dirpath, 'wrapper_api.zip')):
             sys.path.insert(0, 'wrapper_api.zip')
             try:
-                print "Importing here?"
-                log.critical("Importing here?")
-                import pymclevel
-                print "File: " + str(pymclevel.__file__)
-                print "Path: " + str(pymclevel.__path__)
-                sys.modules["pymclevel"] = pymclevel
+                #print "Importing here?"
+                #log.critical("Importing here?")
+                import wrapper_api
+                #print "File: " + str(wrapper_api.__file__)
+                #print "Path: " + str(wrapper_api.__path__)
+                sys.modules["pymclevel"] = wrapper_api
             except:
                 print "Failed"
-        print sys.modules.keys()
+        #print sys.modules.keys()
         self.findFilters()
         self.organizeFilters()
         
